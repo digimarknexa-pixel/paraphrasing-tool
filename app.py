@@ -5,31 +5,30 @@ import openai
 st.set_page_config(page_title="Professional Paraphrasing Tool", layout="centered")
 
 st.markdown("""
-    <style>
-        * {
-            font-family: 'Times New Roman', Times, serif !important;
-        }
-        .stTextArea textarea {
-            font-size: 16px !important;
-            height: 250px !important; /* Large Vertical Boxes */
-        }
-        div.stButton > button:first-child {
-            background-color: #1E3A8A;
-            color: white;
-            font-weight: bold;
-            padding: 10px 24px;
-            border-radius: 4px;
-            width: 100%;
-        }
-    </style>
+<style>
+    * {
+        font-family: 'Times New Roman', Times, serif !important;
+    }
+    .stTextArea textarea {
+        font-size: 16px !important;
+        height: 250px !important; /* Large Vertical Boxes */
+    }
+    div.stButton > button:first-child {
+        background-color: #1E3A8A;
+        color: white;
+        font-weight: bold;
+        padding: 10px 24px;
+        border-radius: 4px;
+        width: 100%;
+    }
+</style>
 """, unsafe_allow_html=True)
 
-# 2. API Configuration (Yahan apni 'sk-proj-...' wali key paste karein)
-OPENAI_API_KEY = "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"
-
+# 2. Safe API Configuration (No keys leaked here)
+OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 openai.api_key = OPENAI_API_KEY
 
-st.title("⚡ Advanced Paraphrasing Tool")
+st.title("✍️ Advanced Paraphrasing Tool")
 st.write("Professional plagiarism removal system with strict constraint handling.")
 
 # 3. Input Area (Vertical Layout - Box 1)
@@ -47,7 +46,7 @@ if st.button("Paraphrase It"):
     if not user_input.strip():
         st.warning("Please enter some text first.")
     elif OPENAI_API_KEY == "YOUR_OPENAI_API_KEY_HERE":
-        st.error("Please add your actual OpenAI API Key in the code.")
+        st.error("Please add your actual OpenAI API Key in the Streamlit Secrets.")
     else:
         # Loading State: Strictly shows "Paraphrasing..."
         with st.spinner("Paraphrasing..."):
@@ -63,7 +62,7 @@ if st.button("Paraphrase It"):
                     "5. Exception: Retain Proper Nouns, technical terminologies, and specific phrases exactly as they are.\n"
                     "6. Retain all HTML formatting, headings (H1, H2, H3), bold text, and list structures exactly. Only paraphrase the text inside them."
                 )
-
+                
                 response = openai.ChatCompletion.create(
                     model="gpt-3.5-turbo",
                     messages=[
@@ -74,7 +73,7 @@ if st.button("Paraphrase It"):
                 )
                 
                 # Saving result in session state
-                st.session_state.output_text = response.choices.message.content
+                st.session_state.output_text = response.choices[0].message.content
             except Exception as e:
                 st.error(f"Error: {str(e)}")
 
