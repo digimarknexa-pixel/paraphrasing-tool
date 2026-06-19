@@ -1,5 +1,6 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 # 1. Page Configuration & Times New Roman Styling
 st.set_page_config(page_title="Professional Paraphrasing Tool", layout="centered")
@@ -24,10 +25,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 2. Safe Gemini API Configuration
+# 2. Safe Gemini API Configuration using new SDK
+client = None
 try:
     GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
-    genai.configure(api_key=GEMINI_API_KEY)
+    client = genai.Client(api_key=GEMINI_API_KEY)
 except Exception:
     st.error("Please add GEMINI_API_KEY in Streamlit Secrets.")
 
@@ -48,6 +50,8 @@ if user_input:
 if st.button("Paraphrase It"):
     if not user_input.strip():
         st.warning("Please enter some text first.")
+    elif client is None:
+        st.error("API client is not configured properly.")
     else:
         with st.spinner("Paraphrasing..."):
             try:
@@ -62,13 +66,14 @@ if st.button("Paraphrase It"):
                     "6. Retain all HTML formatting, headings (H1, H2, H3), bold text, and list structures exactly. Only paraphrase the text inside them."
                 )
                 
-                # Using the default model spec string that works globally for older/newer SDK configs
-                model = genai.GenerativeModel(
-                    model_name="models/gemini-pro", 
-                    system_instruction=system_prompt
+                # Using the standard modern gemini-2.5-flash model on the new SDK
+                response = client.models.generate_content(
+                    model='gemini-2.5-flash',
+                    contents=user_input,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_prompt,
+                    ),
                 )
-                
-                response = model.generate_content(user_input)
                 st.session_state.output_text = response.text
             except Exception as e:
                 st.error(f"Error: {str(e)}")
