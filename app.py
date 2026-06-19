@@ -2,7 +2,7 @@ import streamlit as st
 from google import genai
 from google.genai import types
 
-# Page Styling
+# 1. Page Configuration & Style
 st.set_page_config(page_title="Professional Paraphrasing Tool", layout="centered")
 
 st.markdown("""
@@ -15,7 +15,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Configuration
+# 2. Initialize Session State so output doesn't disappear
+if "paraphrased_result" not in st.session_state:
+    st.session_state.paraphrased_result = ""
+
+# 3. API Configuration
 client = None
 try:
     GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
@@ -25,17 +29,15 @@ except Exception:
 
 st.title("✍️ Advanced Paraphrasing Tool")
 
-# Input Text
-user_input = st.text_area("Paste your original text here:", placeholder="Type or paste content here...", key="my_input")
+# 4. Input Area
+user_input = st.text_area("Paste your original text here:", placeholder="Type or paste content here...", key="user_input_box")
 
-output_placeholder = ""
-
-# Process Button
+# 5. Process Button
 if st.button("Paraphrase It"):
     if not user_input.strip():
         st.warning("Please enter some text first.")
     elif client is None:
-        st.error("API client is not configured.")
+        st.error("API client configuration missing.")
     else:
         with st.spinner("Paraphrasing..."):
             try:
@@ -51,9 +53,15 @@ if st.button("Paraphrase It"):
                         system_instruction=system_prompt,
                     ),
                 )
-                output_placeholder = response.text
+                # Store directly in session state to prevent vanishing on reload
+                st.session_state.paraphrased_result = response.text
             except Exception as e:
                 st.error(f"Error: {str(e)}")
 
-# Output Area (Directly displays the result)
-st.text_area("Paraphrased Output:", value=output_placeholder, placeholder="Your plagiarism-free text will appear here...", key="my_output")
+# 6. Output Area (Reads directly from Session State)
+st.text_area(
+    "Paraphrased Output:", 
+    value=st.session_state.paraphrased_result, 
+    placeholder="Your plagiarism-free text will appear here...", 
+    key="output_box"
+)
