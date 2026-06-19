@@ -1,5 +1,5 @@
 import streamlit as st
-import openai
+import google.generativeai as genai
 
 # 1. Page Configuration & Times New Roman Styling
 st.set_page_config(page_title="Professional Paraphrasing Tool", layout="centered")
@@ -11,7 +11,7 @@ st.markdown("""
     }
     .stTextArea textarea {
         font-size: 16px !important;
-        height: 250px !important; /* Large Vertical Boxes */
+        height: 250px !important;
     }
     div.stButton > button:first-child {
         background-color: #1E3A8A;
@@ -24,14 +24,17 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 2. Safe API Configuration (No keys leaked here)
-OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
-openai.api_key = OPENAI_API_KEY
+# 2. Safe Gemini API Configuration
+try:
+    GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
+    genai.configure(api_key=GEMINI_API_KEY)
+except Exception:
+    st.error("Please add GEMINI_API_KEY in Streamlit Secrets.")
 
 st.title("✍️ Advanced Paraphrasing Tool")
-st.write("Professional plagiarism removal system with strict constraint handling.")
+st.write("Professional plagiarism removal system powered by Gemini.")
 
-# 3. Input Area (Vertical Layout - Box 1)
+# 3. Input Area
 user_input = st.text_area("Paste your original text here:", placeholder="Type or paste content here...", key="input_box")
 
 # 4. Logic for 1000-Word Limit
@@ -45,13 +48,9 @@ if user_input:
 if st.button("Paraphrase It"):
     if not user_input.strip():
         st.warning("Please enter some text first.")
-    elif OPENAI_API_KEY == "YOUR_OPENAI_API_KEY_HERE":
-        st.error("Please add your actual OpenAI API Key in the Streamlit Secrets.")
     else:
-        # Loading State: Strictly shows "Paraphrasing..."
         with st.spinner("Paraphrasing..."):
             try:
-                # System instructions containing ALL your specific finalized rules
                 system_prompt = (
                     "You are an expert paraphrasing engine. Rewrite the user's text to completely remove plagiarism "
                     "while strictly adhering to these rules:\n"
@@ -63,20 +62,16 @@ if st.button("Paraphrase It"):
                     "6. Retain all HTML formatting, headings (H1, H2, H3), bold text, and list structures exactly. Only paraphrase the text inside them."
                 )
                 
-                response = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_input}
-                    ],
-                    temperature=0.5
+                model = genai.GenerativeModel(
+                    model_name="gemini-1.5-flash",
+                    system_instruction=system_prompt
                 )
                 
-                # Saving result in session state
-                st.session_state.output_text = response.choices[0].message.content
+                response = model.generate_content(user_input)
+                st.session_state.output_text = response.text
             except Exception as e:
                 st.error(f"Error: {str(e)}")
 
-# 6. Output Area (Vertical Layout - Box 2)
+# 6. Output Area
 output_content = st.session_state.get('output_text', '')
 st.text_area("Paraphrased Output:", value=output_content, placeholder="Your plagiarism-free text will appear here...", key="output_box")
