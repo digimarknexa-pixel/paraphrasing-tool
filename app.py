@@ -62,8 +62,9 @@ if st.button("Paraphrase It"):
                     "6. Retain all HTML formatting, headings (H1, H2, H3), bold text, and list structures exactly. Only paraphrase the text inside them."
                 )
                 
+                # Using the core supported model string for v1beta APIs
                 model = genai.GenerativeModel(
-                    model_name="models/gemini-1.5-flash",
+                    model_name="gemini-pro", 
                     system_instruction=system_prompt
                 )
                 
