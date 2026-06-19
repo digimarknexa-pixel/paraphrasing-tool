@@ -15,11 +15,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 2. Initialize Session State so output doesn't disappear
-if "paraphrased_result" not in st.session_state:
-    st.session_state.paraphrased_result = ""
-
-# 3. API Configuration
+# 2. API Configuration
 client = None
 try:
     GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
@@ -29,11 +25,14 @@ except Exception:
 
 st.title("✍️ Advanced Paraphrasing Tool")
 
-# 4. Input Area
-user_input = st.text_area("Paste your original text here:", placeholder="Type or paste content here...", key="user_input_box")
+# 3. Form Layout (This prevents Streamlit from clearing text on click)
+with st.form(key="paraphrase_form"):
+    user_input = st.text_area("Paste your original text here:", placeholder="Type or paste content here...")
+    submit_button = st.form_submit_button(label="Paraphrase It")
 
-# 5. Process Button
-if st.button("Paraphrase It"):
+# 4. Processing Logic
+output_text = ""
+if submit_button:
     if not user_input.strip():
         st.warning("Please enter some text first.")
     elif client is None:
@@ -53,15 +52,14 @@ if st.button("Paraphrase It"):
                         system_instruction=system_prompt,
                     ),
                 )
-                # Store directly in session state to prevent vanishing on reload
-                st.session_state.paraphrased_result = response.text
+                output_text = response.text
             except Exception as e:
                 st.error(f"Error: {str(e)}")
 
-# 6. Output Area (Reads directly from Session State)
+# 5. Output Area
 st.text_area(
     "Paraphrased Output:", 
-    value=st.session_state.paraphrased_result, 
+    value=output_text, 
     placeholder="Your plagiarism-free text will appear here...", 
-    key="output_box"
+    key="final_output_box"
 )
