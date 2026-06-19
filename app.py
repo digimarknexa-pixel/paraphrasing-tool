@@ -15,7 +15,13 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 2. API Configuration
+# 2. Session State Initialization
+if "input_text" not in st.session_state:
+    st.session_state.input_text = ""
+if "output_text" not in st.session_state:
+    st.session_state.output_text = ""
+
+# 3. API Configuration
 client = None
 try:
     GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
@@ -25,15 +31,16 @@ except Exception:
 
 st.title("✍️ Advanced Paraphrasing Tool")
 
-# 3. Form Layout (This prevents Streamlit from clearing text on click)
-with st.form(key="paraphrase_form"):
-    user_input = st.text_area("Paste your original text here:", placeholder="Type or paste content here...")
-    submit_button = st.form_submit_button(label="Paraphrase It")
+# 4. Input Area (Bound to session state)
+st.session_state.input_text = st.text_area(
+    "Paste your original text here:", 
+    value=st.session_state.input_text,
+    placeholder="Type or paste content here..."
+)
 
-# 4. Processing Logic
-output_text = ""
-if submit_button:
-    if not user_input.strip():
+# 5. Process Button
+if st.button("Paraphrase It"):
+    if not st.session_state.input_text.strip():
         st.warning("Please enter some text first.")
     elif client is None:
         st.error("API client configuration missing.")
@@ -47,19 +54,19 @@ if submit_button:
                 
                 response = client.models.generate_content(
                     model='gemini-2.5-flash',
-                    contents=user_input,
+                    contents=st.session_state.input_text,
                     config=types.GenerateContentConfig(
                         system_instruction=system_prompt,
                     ),
                 )
-                output_text = response.text
+                st.session_state.output_text = response.text
             except Exception as e:
                 st.error(f"Error: {str(e)}")
 
-# 5. Output Area
+# 6. Output Area (Bound to session state)
 st.text_area(
     "Paraphrased Output:", 
-    value=output_text, 
+    value=st.session_state.output_text, 
     placeholder="Your plagiarism-free text will appear here...", 
-    key="final_output_box"
+    key="final_output"
 )
