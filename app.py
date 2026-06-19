@@ -25,7 +25,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # 2. API Configuration (Yahan apni 'sk-proj-...' wali key paste karein)
-OPENAI_API_KEY = "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"
+OPENAI_API_KEY = "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"
 
 openai.api_key = OPENAI_API_KEY
 
@@ -65,7 +65,7 @@ if st.button("Paraphrase It"):
                 )
 
                 response = openai.ChatCompletion.create(
-                    model="gpt-4o",
+                    model="gpt-3.5-turbo",
                     messages=[
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_input}
