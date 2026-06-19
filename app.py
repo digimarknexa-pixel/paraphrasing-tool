@@ -2,7 +2,7 @@ import streamlit as st
 from google import genai
 from google.genai import types
 
-# 1. Page Configuration & Style
+# 1. Page Styling
 st.set_page_config(page_title="Professional Paraphrasing Tool", layout="centered")
 
 st.markdown("""
@@ -15,58 +15,48 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 2. Session State Initialization
-if "input_text" not in st.session_state:
-    st.session_state.input_text = ""
-if "output_text" not in st.session_state:
-    st.session_state.output_text = ""
-
-# 3. API Configuration
+# 2. API Connection
 client = None
 try:
-    GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
-    client = genai.Client(api_key=GEMINI_API_KEY)
-except Exception:
-    st.error("Please add GEMINI_API_KEY in Streamlit Secrets.")
+    if "GEMINI_API_KEY" in st.secrets:
+        client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+    else:
+        st.error("Please add GEMINI_API_KEY in Streamlit Secrets.")
+except Exception as e:
+    st.error(f"Secret Error: {str(e)}")
 
 st.title("✍️ Advanced Paraphrasing Tool")
 
-# 4. Input Area (Bound to session state)
-st.session_state.input_text = st.text_area(
-    "Paste your original text here:", 
-    value=st.session_state.input_text,
-    placeholder="Type or paste content here..."
-)
+# 3. Form Setup to stop data loss on refresh
+with st.form(key="my_paraphrase_form"):
+    user_input = st.text_area("Paste your original text here:", placeholder="Type or paste content here...")
+    submit_button = st.form_submit_button(label="Paraphrase It")
 
-# 5. Process Button
-if st.button("Paraphrase It"):
-    if not st.session_state.input_text.strip():
+# 4. Logic & Execution
+if submit_button:
+    if not user_input.strip():
         st.warning("Please enter some text first.")
     elif client is None:
-        st.error("API client configuration missing.")
+        st.error("API configuration is missing.")
     else:
-        with st.spinner("Paraphrasing..."):
+        with st.spinner("Paraphrasing... Please wait."):
             try:
                 system_prompt = (
                     "You are an expert paraphrasing engine. Rewrite the user's text to completely remove plagiarism "
-                    "while keeping the original meaning intact. Break long sentences into shorter ones. Do not copy consecutive words."
+                    "while keeping the original meaning intact."
                 )
                 
                 response = client.models.generate_content(
                     model='gemini-2.5-flash',
-                    contents=st.session_state.input_text,
+                    contents=user_input,
                     config=types.GenerateContentConfig(
                         system_instruction=system_prompt,
                     ),
                 )
-                st.session_state.output_text = response.text
+                
+                # Directly showing the output right under the form on successful execution
+                st.success("Done!")
+                st.text_area("Paraphrased Output:", value=response.text, height=250)
+                
             except Exception as e:
-                st.error(f"Error: {str(e)}")
-
-# 6. Output Area (Bound to session state)
-st.text_area(
-    "Paraphrased Output:", 
-    value=st.session_state.output_text, 
-    placeholder="Your plagiarism-free text will appear here...", 
-    key="final_output"
-)
+                st.error(f"API Error: {str(e)}")
